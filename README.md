@@ -29,3 +29,4 @@ Struktura:
 - `reports/` - wygenerowane raporty i szablony
 - `tests/` - testy jednostkowe
 
+# Raport---FP-HOLDING
