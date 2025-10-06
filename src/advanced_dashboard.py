@@ -271,159 +271,171 @@ class AdvancedSalesDashboard:
         day_analysis = self.create_day_of_week_analysis()
         trends, metrics = self.create_performance_metrics()
         
+        # Konwersja wykresów do JSON
+        import json
+        monthly_json = monthly_chart.to_json()
+        daily_json = daily_chart.to_json()
+        day_analysis_json = day_analysis.to_json()
+        
         # HTML template
-        html_content = f"""
-        <!DOCTYPE html>
-        <html lang="pl">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Dashboard Sprzedaży FP-HOLDING</title>
-            <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-            <style>
-                body {{
-                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                    margin: 0;
-                    padding: 20px;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    min-height: 100vh;
-                }}
-                .container {{
-                    max-width: 1400px;
-                    margin: 0 auto;
-                    background: white;
-                    border-radius: 15px;
-                    padding: 30px;
-                    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-                }}
-                .header {{
-                    text-align: center;
-                    margin-bottom: 40px;
-                    background: linear-gradient(45deg, #2c3e50, #3498db);
-                    color: white;
-                    padding: 30px;
-                    border-radius: 10px;
-                }}
-                .header h1 {{
-                    margin: 0;
-                    font-size: 2.5rem;
-                    font-weight: 300;
-                }}
-                .header p {{
-                    margin: 10px 0 0 0;
-                    opacity: 0.9;
-                    font-size: 1.1rem;
-                }}
-                .metrics-grid {{
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                    gap: 20px;
-                    margin-bottom: 30px;
-                }}
-                .metric-card {{
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    padding: 25px;
-                    border-radius: 12px;
-                    color: white;
-                    text-align: center;
-                    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-                    transition: transform 0.3s ease;
-                }}
-                .metric-card:hover {{
-                    transform: translateY(-5px);
-                }}
-                .metric-value {{
-                    font-size: 2rem;
-                    font-weight: bold;
-                    margin-bottom: 5px;
-                }}
-                .metric-title {{
-                    font-size: 0.9rem;
-                    opacity: 0.9;
-                    text-transform: uppercase;
-                    letter-spacing: 1px;
-                }}
-                .chart-container {{
-                    margin-bottom: 30px;
-                    background: white;
-                    border-radius: 10px;
-                    padding: 20px;
-                    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-                }}
-                .insights {{
-                    background: #f8f9fa;
-                    padding: 20px;
-                    border-radius: 10px;
-                    margin-top: 30px;
-                    border-left: 5px solid #3498db;
-                }}
-                .insights h3 {{
-                    color: #2c3e50;
-                    margin-top: 0;
-                }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>🏢 Dashboard Sprzedaży FP-HOLDING</h1>
-                    <p>Zaawansowana analiza sprzedaży i trendów - Wrzesień 2025</p>
-                    <p>Ostatnia aktualizacja: {datetime.now().strftime('%d.%m.%Y %H:%M')}</p>
-                </div>
-                
-                <div class="metrics-grid">
-                    <div class="metric-card">
-                        <div class="metric-value">{trends.get('avg_daily_revenue', 0):,.0f} zł</div>
-                        <div class="metric-title">Średnia Dzienna</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value">{trends.get('max_daily_revenue', 0):,.0f} zł</div>
-                        <div class="metric-title">Najwyższy Dzień</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value">{trends.get('total_revenue', 0):,.0f} zł</div>
-                        <div class="metric-title">Łączny Przychód</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value">{trends.get('weekly_trend', 0):+.1f}%</div>
-                        <div class="metric-title">Trend Tygodniowy</div>
-                    </div>
-                </div>
-                
-                <div class="chart-container">
-                    <div id="monthly-chart"></div>
-                </div>
-                
-                <div class="chart-container">
-                    <div id="daily-chart"></div>
-                </div>
-                
-                <div class="chart-container">
-                    <div id="day-analysis"></div>
-                </div>
-                
-                <div class="insights">
-                    <h3>📊 Kluczowe Insights</h3>
-                    <ul>
-                        <li><strong>Najlepszy dzień:</strong> {self.df_daily.loc[self.df_daily['amount'].idxmax(), 'date'].strftime('%d.%m.%Y') if not self.df_daily.empty else 'Brak danych'} 
-                            ({trends.get('max_daily_revenue', 0):,.0f} zł)</li>
-                        <li><strong>Trend tygodniowy:</strong> 
-                            {'📈 Wzrost' if trends.get('weekly_trend', 0) > 0 else '📉 Spadek' if trends.get('weekly_trend', 0) < 0 else '➡️ Stabilny'} 
-                            ({trends.get('weekly_trend', 0):+.1f}%)</li>
-                        <li><strong>Średnia dzienna:</strong> {trends.get('avg_daily_revenue', 0):,.0f} zł</li>
-                        <li><strong>Zakres dzienny:</strong> {trends.get('min_daily_revenue', 0):,.0f} - {trends.get('max_daily_revenue', 0):,.0f} zł</li>
-                    </ul>
-                </div>
+        html_content = f"""<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Sprzedaży FP-HOLDING</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body {{
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }}
+        .container {{
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }}
+        .header {{
+            text-align: center;
+            margin-bottom: 40px;
+            background: linear-gradient(45deg, #2c3e50, #3498db);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+        }}
+        .header h1 {{
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 300;
+        }}
+        .header p {{
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }}
+        .metrics-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }}
+        .metric-card {{
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 25px;
+            border-radius: 12px;
+            color: white;
+            text-align: center;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }}
+        .metric-card:hover {{
+            transform: translateY(-5px);
+        }}
+        .metric-value {{
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }}
+        .metric-title {{
+            font-size: 0.9rem;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }}
+        .chart-container {{
+            margin-bottom: 30px;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }}
+        .insights {{
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+            border-left: 5px solid #3498db;
+        }}
+        .insights h3 {{
+            color: #2c3e50;
+            margin-top: 0;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏢 Dashboard Sprzedaży FP-HOLDING</h1>
+            <p>Zaawansowana analiza sprzedaży i trendów - Wrzesień 2025</p>
+            <p>Ostatnia aktualizacja: {datetime.now().strftime('%d.%m.%Y %H:%M')}</p>
+        </div>
+        
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-value">{trends.get('avg_daily_revenue', 0):,.0f} zł</div>
+                <div class="metric-title">Średnia Dzienna</div>
             </div>
-            
-            <script>
-                {monthly_chart.to_html(include_plotlyjs=False, div_id="monthly-chart")}
-                {daily_chart.to_html(include_plotlyjs=False, div_id="daily-chart")}
-                {day_analysis.to_html(include_plotlyjs=False, div_id="day-analysis")}
-            </script>
-        </body>
-        </html>
-        """
+            <div class="metric-card">
+                <div class="metric-value">{trends.get('max_daily_revenue', 0):,.0f} zł</div>
+                <div class="metric-title">Najwyższy Dzień</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">{trends.get('total_revenue', 0):,.0f} zł</div>
+                <div class="metric-title">Łączny Przychód</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">{trends.get('weekly_trend', 0):+.1f}%</div>
+                <div class="metric-title">Trend Tygodniowy</div>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <div id="monthly-chart" style="height: 500px;"></div>
+        </div>
+        
+        <div class="chart-container">
+            <div id="daily-chart" style="height: 800px;"></div>
+        </div>
+        
+        <div class="chart-container">
+            <div id="day-analysis" style="height: 400px;"></div>
+        </div>
+        
+        <div class="insights">
+            <h3>📊 Kluczowe Insights</h3>
+            <ul>
+                <li><strong>Najlepszy dzień:</strong> {self.df_daily.loc[self.df_daily['amount'].idxmax(), 'date'].strftime('%d.%m.%Y') if not self.df_daily.empty else 'Brak danych'} 
+                    ({trends.get('max_daily_revenue', 0):,.0f} zł)</li>
+                <li><strong>Trend tygodniowy:</strong> 
+                    {'📈 Wzrost' if trends.get('weekly_trend', 0) > 0 else '📉 Spadek' if trends.get('weekly_trend', 0) < 0 else '➡️ Stabilny'} 
+                    ({trends.get('weekly_trend', 0):+.1f}%)</li>
+                <li><strong>Średnia dzienna:</strong> {trends.get('avg_daily_revenue', 0):,.0f} zł</li>
+                <li><strong>Zakres dzienny:</strong> {trends.get('min_daily_revenue', 0):,.0f} - {trends.get('max_daily_revenue', 0):,.0f} zł</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        // Wykres miesięczny
+        var monthlyConfig = {monthly_json};
+        Plotly.newPlot('monthly-chart', monthlyConfig.data, monthlyConfig.layout, {{responsive: true}});
+        
+        // Wykres dzienny
+        var dailyConfig = {daily_json};
+        Plotly.newPlot('daily-chart', dailyConfig.data, dailyConfig.layout, {{responsive: true}});
+        
+        // Analiza dni tygodnia
+        var dayConfig = {day_analysis_json};
+        Plotly.newPlot('day-analysis', dayConfig.data, dayConfig.layout, {{responsive: true}});
+    </script>
+</body>
+</html>"""
         
         # Zapisanie pliku
         with open(output_path, 'w', encoding='utf-8') as f:
