@@ -1,0 +1,5 @@
+name: raport-env
+dependencies:
+  - python=3.10
+  - pip
+  # Dodaj tutaj pozostałe potrzebne pakiety
