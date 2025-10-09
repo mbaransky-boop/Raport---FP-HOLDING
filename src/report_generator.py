@@ -220,6 +220,83 @@ class ReportGenerator:
         
         return fig.to_json()
     
+    def create_cost_profit_analysis(self):
+        """Wykres analizy relacji koszty-zyski dla managera"""
+        df = self.analyzer.df
+        
+        fig = go.Figure()
+        
+        # Waterfall pokazujący jak koszty wpływają na zysk
+        fig.add_trace(go.Waterfall(
+            name="Analiza P&L",
+            orientation="v",
+            x=df['Okres_str'].tolist(),
+            textposition="outside",
+            text=[f"{val:,.0f}" for val in df['Zysk_Excel']],
+            y=df['Zysk_Excel'].tolist(),
+            connector={"line": {"color": "rgb(63, 63, 63)"}},
+            decreasing={"marker": {"color": "#FF006E"}},
+            increasing={"marker": {"color": "#06FFA5"}},
+            totals={"marker": {"color": "#3B82F6"}}
+        ))
+        
+        fig.update_layout(
+            title=dict(
+                text='Analiza Koszty-Zyski: Struktura Rentowności',
+                font=dict(size=20, color='#E8E8E8', family='Inter')
+            ),
+            xaxis_title='Okres',
+            yaxis_title='Zysk/Strata (PLN)',
+            template='plotly_dark',
+            height=500,
+            showlegend=False,
+            font=dict(family='Inter', size=12, color='#E8E8E8'),
+            paper_bgcolor='rgba(26,26,46,0.95)',
+            plot_bgcolor='rgba(30,30,46,0.8)'
+        )
+        
+        return fig.to_json()
+    
+    def create_cost_breakdown_chart(self):
+        """Wykres rozbicia kosztów dla managera"""
+        df = self.analyzer.df
+        
+        # Średnie koszty w okresie
+        avg_kwota_netto = df['Kwota_netto'].mean()
+        avg_zus = df['ZUS'].mean()
+        avg_pit = df['PIT'].mean()
+        avg_koszt_prac = df['Koszt_pracowniczy'].mean()
+        
+        fig = go.Figure(data=[go.Pie(
+            labels=['Produkty/Usługi', 'ZUS', 'PIT', 'Koszty Pracownicze'],
+            values=[avg_kwota_netto, avg_zus, avg_pit, avg_koszt_prac],
+            hole=.5,
+            marker=dict(colors=['#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6']),
+            textinfo='label+percent+value',
+            texttemplate='<b>%{label}</b><br>%{value:,.0f} PLN<br>(%{percent})',
+            hovertemplate='<b>%{label}</b><br>Średnio: %{value:,.0f} PLN<br>Udział: %{percent}<extra></extra>'
+        )])
+        
+        fig.update_layout(
+            title=dict(
+                text='Struktura Kosztów (Średnia Miesięczna)',
+                font=dict(size=20, color='#E8E8E8', family='Inter')
+            ),
+            template='plotly_dark',
+            height=500,
+            font=dict(family='Inter', size=14, color='#E8E8E8'),
+            paper_bgcolor='rgba(26,26,46,0.95)',
+            showlegend=True,
+            legend=dict(
+                bgcolor='rgba(30,30,46,0.9)',
+                bordercolor='#3B82F6',
+                borderwidth=1,
+                font=dict(color='#E8E8E8')
+            )
+        )
+        
+        return fig.to_json()
+    
     def generate_html(self, output_path='reports/fp_holding_raport.html'):
         """Generuje nowoczesny dark mode raport"""
         
@@ -227,6 +304,8 @@ class ReportGenerator:
         trend_chart = self.create_trend_chart()
         profit_chart = self.create_profit_chart()
         zus_chart = self.create_zus_chart()
+        cost_profit_chart = self.create_cost_profit_analysis()
+        cost_breakdown_chart = self.create_cost_breakdown_chart()
         
         # KPI
         total_revenue = self.analysis['summary']['total_revenue']
@@ -858,6 +937,137 @@ class ReportGenerator:
             border-color: #06FFA5;
         }}
         
+        /* Commission Calculator Styles */
+        .commission-calculator {{
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%);
+            padding: 50px;
+            border-radius: 24px;
+            border: 2px solid #8B5CF6;
+            margin: 50px 0;
+        }}
+        
+        .commission-calculator h2 {{
+            color: #8B5CF6;
+            font-size: 2em;
+            margin-bottom: 15px;
+            text-align: center;
+        }}
+        
+        .calc-grid {{
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-top: 40px;
+        }}
+        
+        .calc-input-panel {{
+            background: rgba(30, 30, 46, 0.9);
+            padding: 35px;
+            border-radius: 20px;
+            border: 2px solid rgba(139, 92, 246, 0.3);
+        }}
+        
+        .calc-result-panel {{
+            background: rgba(30, 30, 46, 0.9);
+            padding: 35px;
+            border-radius: 20px;
+            border: 2px solid rgba(6, 255, 165, 0.3);
+        }}
+        
+        .calc-input-group {{
+            margin-bottom: 30px;
+        }}
+        
+        .calc-label {{
+            display: block;
+            color: #A0AEC0;
+            font-size: 1em;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            font-weight: 600;
+        }}
+        
+        .calc-input {{
+            width: 100%;
+            background: rgba(59, 130, 246, 0.1);
+            border: 2px solid rgba(59, 130, 246, 0.3);
+            border-radius: 12px;
+            padding: 15px 20px;
+            color: #E8E8E8;
+            font-size: 1.3em;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            transition: all 0.3s;
+        }}
+        
+        .calc-input:focus {{
+            outline: none;
+            border-color: #8B5CF6;
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+        }}
+        
+        .calc-result {{
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, rgba(6, 255, 165, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+            border-radius: 16px;
+            margin-bottom: 25px;
+        }}
+        
+        .calc-result-label {{
+            color: #A0AEC0;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 15px;
+        }}
+        
+        .calc-result-value {{
+            color: #06FFA5;
+            font-size: 3em;
+            font-weight: 900;
+            font-family: 'JetBrains Mono', monospace;
+            text-shadow: 0 0 30px rgba(6, 255, 165, 0.5);
+        }}
+        
+        .calc-breakdown {{
+            background: rgba(59, 130, 246, 0.05);
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #8B5CF6;
+        }}
+        
+        .calc-breakdown-item {{
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+        }}
+        
+        .calc-breakdown-item:last-child {{
+            border-bottom: none;
+        }}
+        
+        .calc-tier {{
+            background: rgba(139, 92, 246, 0.1);
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin: 10px 0;
+            border-left: 4px solid #8B5CF6;
+        }}
+        
+        .calc-tier.active {{
+            background: rgba(6, 255, 165, 0.15);
+            border-left-color: #06FFA5;
+        }}
+        
+        @media (max-width: 1200px) {{
+            .calc-grid {{
+                grid-template-columns: 1fr;
+            }}
+        }}
+        
         ::-webkit-scrollbar {{
             width: 12px;
         }}
@@ -879,32 +1089,34 @@ class ReportGenerator:
 <body>
     <div class="container">
         <div class="header">
-            <h1>📊 FP HOLDING FINANCIAL DASHBOARD</h1>
-            <p class="subtitle">Kompleksowa analiza zarządcza | sie.2024 – wrz.2025</p>
+            <h1>📊 FORUM PANORAMA - RAPORT ZARZĄDCZY</h1>
+            <p class="subtitle">Analiza finansowa dla nowego managera | wrz.2024 – wrz.2025</p>
             <div class="meta">
                 <span class="meta-badge">📅 {datetime.now().strftime('%d.%m.%Y | %H:%M')}</span>
-                <span class="meta-badge">📈 14 okresów</span>
-                <span class="meta-badge">🔒 CONFIDENTIAL</span>
+                <span class="meta-badge">📈 13 okresów</span>
+                <span class="meta-badge">🎯 Manager Edition</span>
             </div>
         </div>
         
         <div class="executive-summary">
-            <h2>I. Executive Summary</h2>
+            <h2>🎯 ONBOARDING DLA NOWEGO MANAGERA</h2>
             <p>
-                Zaawansowana analiza finansowa przedsiębiorstwa FP HOLDING za okres 14 miesięcy rozliczeniowych.
-                Dashboard prezentuje kluczowe wskaźniki efektywności, trendy oraz rekomendacje strategiczne
-                oparte na danych rzeczywistych z systemu księgowego.
+                <strong>Witamy w Forum Panorama!</strong> Ten raport został przygotowany specjalnie dla Ciebie,
+                aby ułatwić start w nowej roli. Znajdziesz tu kompletną analizę finansową za ostatnie 13 miesięcy
+                (wrz.2024 - wrz.2025), kluczowe wskaźniki oraz rekomendacje dla poprawy rentowności.
             </p>
             <div class="highlight">
-                <p><strong>🎯 Kluczowe metryki:</strong></p>
+                <p><strong>🎯 Twoje kluczowe cele:</strong></p>
                 <p>
-                    💰 Całkowite przychody: <strong>{total_revenue:,.0f} PLN</strong><br>
+                    💰 Przychody (13 m-cy): <strong>{total_revenue:,.0f} PLN</strong><br>
                     📊 Wynik netto: <strong>{total_profit:,.0f} PLN</strong>
                     <span class="badge {'success' if total_profit > 0 else 'danger'}">
-                        {'PROFIT' if total_profit > 0 else 'LOSS'}
+                        {'ZYSK' if total_profit > 0 else 'STRATA'}
                     </span><br>
-                    📉 Marża: <strong>{margin:.2f}%</strong><br>
-                    ✅ Rentowność: <strong>{profitable_months}/{profitable_months + loss_months}</strong> okresów zyskownych
+                    📉 Marża: <strong>{margin:.2f}%</strong> 
+                    <span class="badge warning">TARGET: +5%</span><br>
+                    ✅ Rentowne okresy: <strong>{profitable_months}/{profitable_months + loss_months}</strong>
+                    <span class="badge info">ZWIĘKSZ DO 100%</span>
                 </p>
             </div>
         </div>
@@ -1011,21 +1223,205 @@ class ReportGenerator:
                 <div class="chart-container">
                     <div id="zus-chart"></div>
                 </div>
+                
+                <h3>3.5. 💼 Cost-Profit Analysis dla Managera</h3>
+                <p class="section-intro">
+                    Waterfall chart pokazujący strukturę rentowności - kluczowe narzędzie dla zarządzania kosztami.
+                </p>
+                <div class="chart-container">
+                    <div id="cost-profit-chart"></div>
+                </div>
+                
+                <h3>3.6. 📊 Rozbicie Kosztów Operacyjnych</h3>
+                <p class="section-intro">
+                    Struktura kosztów - zidentyfikuj największe możliwości optymalizacji.
+                </p>
+                <div class="chart-container">
+                    <div id="cost-breakdown-chart"></div>
+                </div>
+            </div>
+            
+            <div class="commission-calculator">
+                <h2>💰 PRZELICZNIK PROWIZJI OD WZROSTU</h2>
+                <p style="text-align: center; color: #A0AEC0; margin-bottom: 30px; font-size: 1.1em;">
+                    System motywacyjny dla managera - oblicz swoją prowizję na podstawie wzrostu przychodów
+                </p>
+                
+                <div class="calc-grid">
+                    <div class="calc-input-panel">
+                        <h3 style="color: #8B5CF6; margin-top: 0;">📊 Wprowadź dane</h3>
+                        
+                        <div class="calc-input-group">
+                            <label class="calc-label">Obecne przychody miesięczne (PLN)</label>
+                            <input type="number" class="calc-input" id="current-revenue" 
+                                   value="{avg_revenue:.0f}" step="1000">
+                        </div>
+                        
+                        <div class="calc-input-group">
+                            <label class="calc-label">Docelowe przychody miesięczne (PLN)</label>
+                            <input type="number" class="calc-input" id="target-revenue" 
+                                   value="{avg_revenue * 1.15:.0f}" step="1000">
+                        </div>
+                        
+                        <div class="calc-breakdown">
+                            <h4 style="color: #8B5CF6; margin-bottom: 15px;">📋 Progi prowizyjne:</h4>
+                            <div class="calc-tier">
+                                <strong>Tier 1:</strong> 0-10% wzrostu → 2% prowizji
+                            </div>
+                            <div class="calc-tier">
+                                <strong>Tier 2:</strong> 10-20% wzrostu → 3% prowizji
+                            </div>
+                            <div class="calc-tier">
+                                <strong>Tier 3:</strong> 20-30% wzrostu → 4% prowizji
+                            </div>
+                            <div class="calc-tier">
+                                <strong>Tier 4:</strong> >30% wzrostu → 5% prowizji + bonus
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="calc-result-panel">
+                        <h3 style="color: #06FFA5; margin-top: 0;">💎 Twoja prowizja</h3>
+                        
+                        <div class="calc-result">
+                            <div class="calc-result-label">Miesięczna prowizja</div>
+                            <div class="calc-result-value" id="monthly-commission">0 PLN</div>
+                        </div>
+                        
+                        <div class="calc-result">
+                            <div class="calc-result-label">Roczna prowizja</div>
+                            <div class="calc-result-value" id="annual-commission">0 PLN</div>
+                        </div>
+                        
+                        <div class="calc-breakdown">
+                            <h4 style="color: #06FFA5; margin-bottom: 15px;">📈 Szczegóły:</h4>
+                            <div class="calc-breakdown-item">
+                                <span>Wzrost przychodów:</span>
+                                <strong id="revenue-growth">0%</strong>
+                            </div>
+                            <div class="calc-breakdown-item">
+                                <span>Aktywny tier:</span>
+                                <strong id="active-tier">-</strong>
+                            </div>
+                            <div class="calc-breakdown-item">
+                                <span>Stawka prowizji:</span>
+                                <strong id="commission-rate">0%</strong>
+                            </div>
+                            <div class="calc-breakdown-item">
+                                <span>Przyrost miesięczny:</span>
+                                <strong id="monthly-increase">0 PLN</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <div class="section">
-                <h2>IV. STRATEGIC RECOMMENDATIONS</h2>
+                <h2>IV. PLAN NAPRAWCZY DLA FORUM PANORAMA</h2>
                 
                 <div class="recommendations">
-                    <h3>🎯 Action Plan</h3>
+                    <h3>🎯 Action Plan - Priorytety dla Nowego Managera</h3>
                     
                     <div class="recommendation-item priority-high">
-                        <h4>🔴 CRITICAL (0-30 days)</h4>
+                        <h4>🔴 TYDZIEŃ 1-2: Immediate Actions</h4>
                         <p>
-                            <strong>1. Liquidity Management:</strong> Natychmiastowe uregulowanie US VAT (50,135 PLN) i ZUS (90,000 PLN).
-                            Negocjacja terminów płatności z wierzycielami.<br><br>
-                            <strong>2. Loss Analysis:</strong> Szczegółowa analiza {loss_months} okresów stratnych.
-                            Identyfikacja przyczyn i quick wins.
+                            <strong>1. Analiza struktury kosztów:</strong> Przeprowadź szczegółowy audyt wszystkich 
+                            kontraktów z dostawcami. Zidentyfikuj top 10 największych kosztów i przygotuj plan renegocjacji.
+                            <strong>Target: -8% kosztów w 60 dni.</strong><br><br>
+                            
+                            <strong>2. Team Meeting & Goals:</strong> Spotkanie z zespołem - przedstaw cele finansowe,
+                            system motywacyjny i KPI. Każdy pracownik musi znać swój wkład w osiągnięcie rentowności.
+                            <strong>Target: 100% zespołu zaangażowane.</strong><br><br>
+                            
+                            <strong>3. Quick Wins - Menu Engineering:</strong> Analiza menu - usuń dania o najniższej 
+                            marży, promuj high-margin items. Wprowadź "chef's recommendations" z 60%+ marżą.
+                            <strong>Target: +5% średniego rachunku w 30 dni.</strong>
+                        </p>
+                    </div>
+                    
+                    <div class="recommendation-item priority-high">
+                        <h4>🟠 MIESIĄC 1: Revenue Growth Initiatives</h4>
+                        <p>
+                            <strong>1. Marketing Blitz:</strong> Kampania 30-dniowa: social media, influencer partnerships,
+                            Google Ads. Budget: 15k PLN. <strong>Expected ROI: 300% (45k przychodów).</strong><br><br>
+                            
+                            <strong>2. Upselling Program:</strong> Wdróż strukturę upselling dla kelnerów - bonus za sprzedaż
+                            win premium, deserów, dodatków. <strong>Target: +12% średniego rachunku.</strong><br><br>
+                            
+                            <strong>3. Event Calendar:</strong> Zaplanuj 4 eventy tematyczne (degustacje, live music, 
+                            business lunches). <strong>Target: +200 klientów/miesiąc.</strong>
+                        </p>
+                    </div>
+                    
+                    <div class="recommendation-item priority-medium">
+                        <h4>🟡 MIESIĄC 2-3: Operational Excellence</h4>
+                        <p>
+                            <strong>1. Staff Optimization:</strong> Wprowadź elastyczny scheduling - więcej personelu 
+                            w peak hours, mniej w slow periods. <strong>Target: -15% kosztów pracowniczych.</strong><br><br>
+                            
+                            <strong>2. Supplier Renegotiation:</strong> Zakończ renegocjacje - zmień dostawców jeśli 
+                            konieczne. Priorytet: wino (30% kosztów), mięso (25%), warzywa (15%).
+                            <strong>Target: -10% kosztów zakupu.</strong><br><br>
+                            
+                            <strong>3. Waste Reduction:</strong> Implementuj system zarządzania odpadami, daily inventory checks.
+                            <strong>Target: -20% food waste = +8k PLN/miesiąc.</strong>
+                        </p>
+                    </div>
+                    
+                    <div class="recommendation-item priority-medium">
+                        <h4>🟢 KWARTAŁ 2: Growth & Scale</h4>
+                        <p>
+                            <strong>1. Loyalty Program:</strong> Wdróż program lojalnościowy - zbieraj dane klientów,
+                            personalizuj oferty. <strong>Target: 30% returning customers.</strong><br><br>
+                            
+                            <strong>2. Catering/Delivery Expansion:</strong> Rozszerz ofertę catering dla firm, 
+                            dostawa premium. Nowy stream przychodów. <strong>Target: +50k PLN/miesiąc.</strong><br><br>
+                            
+                            <strong>3. Partnership Deals:</strong> Współpraca z hotelami, biurami, eventami w okolicy.
+                            <strong>Target: +100 klientów korporacyjnych.</strong>
+                        </p>
+                    </div>
+                </div>
+                
+                <div style="background: linear-gradient(135deg, rgba(6, 255, 165, 0.1), rgba(59, 130, 246, 0.1)); 
+                           padding: 40px; border-radius: 20px; margin-top: 40px; border: 2px solid #06FFA5;">
+                    <h3 style="color: #06FFA5; text-align: center; margin-bottom: 20px;">
+                        🎯 TWOJE CELE NA PIERWSZE 90 DNI
+                    </h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                        <div style="text-align: center; padding: 20px; background: rgba(30,30,46,0.6); border-radius: 12px;">
+                            <div style="font-size: 2em; color: #06FFA5; font-weight: 900;">+15%</div>
+                            <div style="color: #A0AEC0;">Wzrost przychodów</div>
+                        </div>
+                        <div style="text-align: center; padding: 20px; background: rgba(30,30,46,0.6); border-radius: 12px;">
+                            <div style="font-size: 2em; color: #06FFA5; font-weight: 900;">-12%</div>
+                            <div style="color: #A0AEC0;">Redukcja kosztów</div>
+                        </div>
+                        <div style="text-align: center; padding: 20px; background: rgba(30,30,46,0.6); border-radius: 12px;">
+                            <div style="font-size: 2em; color: #06FFA5; font-weight: 900;">+8%</div>
+                            <div style="color: #A0AEC0;">Marża netto</div>
+                        </div>
+                        <div style="text-align: center; padding: 20px; background: rgba(30,30,46,0.6); border-radius: 12px;">
+                            <div style="font-size: 2em; color: #06FFA5; font-weight: 900;">100%</div>
+                            <div style="color: #A0AEC0;">Miesiące zyskowne</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="simulator-section">
+                <h2>🚀 INTERACTIVE INVESTMENT SIMULATOR</h2>
+                <p class="simulator-intro">
+                    Przesuń suwaki, aby zobaczyć potencjalny wpływ optymalizacji na wyniki finansowe przedsiębiorstwa.
+                    Symulator pokazuje realistyczne scenariusze rozwoju przy różnych założeniach strategicznych.
+                </p>
+                
+                <div class="scenario-badges">
+                    <button class="scenario-btn" onclick="applyScenario('conservative')">📊 Konserwatywny</button>
+                    <button class="scenario-btn" onclick="applyScenario('moderate')">📈 Umiarkowany</button>
+                    <button class="scenario-btn" onclick="applyScenario('aggressive')">🚀 Agresywny</button>
+                    <button class="scenario-btn" onclick="applyScenario('breakeven')">⚖️ Break-even</button>
+                </div>
                         </p>
                     </div>
                     
@@ -1204,6 +1600,8 @@ class ReportGenerator:
         Plotly.newPlot("trend-chart", JSON.parse('{trend_chart}'));
         Plotly.newPlot("profit-chart", JSON.parse('{profit_chart}'));
         Plotly.newPlot("zus-chart", JSON.parse('{zus_chart}'));
+        Plotly.newPlot("cost-profit-chart", JSON.parse('{cost_profit_chart}'));
+        Plotly.newPlot("cost-breakdown-chart", JSON.parse('{cost_breakdown_chart}'));
         
         // Responsive resize
         window.addEventListener('resize', function() {{
@@ -1211,6 +1609,8 @@ class ReportGenerator:
             Plotly.Plots.resize('trend-chart');
             Plotly.Plots.resize('profit-chart');
             Plotly.Plots.resize('zus-chart');
+            Plotly.Plots.resize('cost-profit-chart');
+            Plotly.Plots.resize('cost-breakdown-chart');
         }});
         
         // Fade-in animations on scroll
@@ -1491,6 +1891,61 @@ class ReportGenerator:
         
         // Initialize forecast chart
         updateForecastChart(baseData.avgRevenue, baseData.avgCosts, baseData.avgProfit);
+        
+        // Commission Calculator Logic
+        const currentRevenueInput = document.getElementById('current-revenue');
+        const targetRevenueInput = document.getElementById('target-revenue');
+        
+        function calculateCommission() {{
+            const currentRevenue = parseFloat(currentRevenueInput.value) || 0;
+            const targetRevenue = parseFloat(targetRevenueInput.value) || 0;
+            
+            const increase = targetRevenue - currentRevenue;
+            const growthPercent = (increase / currentRevenue) * 100;
+            
+            let commissionRate = 0;
+            let tierName = 'Brak';
+            
+            if (growthPercent > 30) {{
+                commissionRate = 5;
+                tierName = 'Tier 4 (>30%)';
+            }} else if (growthPercent > 20) {{
+                commissionRate = 4;
+                tierName = 'Tier 3 (20-30%)';
+            }} else if (growthPercent > 10) {{
+                commissionRate = 3;
+                tierName = 'Tier 2 (10-20%)';
+            }} else if (growthPercent > 0) {{
+                commissionRate = 2;
+                tierName = 'Tier 1 (0-10%)';
+            }}
+            
+            const monthlyCommission = increase * (commissionRate / 100);
+            const annualCommission = monthlyCommission * 12;
+            
+            // Update UI
+            document.getElementById('monthly-commission').textContent = formatNumber(monthlyCommission) + ' PLN';
+            document.getElementById('annual-commission').textContent = formatNumber(annualCommission) + ' PLN';
+            document.getElementById('revenue-growth').textContent = growthPercent.toFixed(1) + '%';
+            document.getElementById('active-tier').textContent = tierName;
+            document.getElementById('commission-rate').textContent = commissionRate + '%';
+            document.getElementById('monthly-increase').textContent = formatNumber(increase) + ' PLN';
+            
+            // Highlight active tier
+            document.querySelectorAll('.calc-tier').forEach((tier, index) => {{
+                tier.classList.remove('active');
+                if (commissionRate === 2 && index === 0) tier.classList.add('active');
+                if (commissionRate === 3 && index === 1) tier.classList.add('active');
+                if (commissionRate === 4 && index === 2) tier.classList.add('active');
+                if (commissionRate === 5 && index === 3) tier.classList.add('active');
+            }});
+        }}
+        
+        currentRevenueInput.addEventListener('input', calculateCommission);
+        targetRevenueInput.addEventListener('input', calculateCommission);
+        
+        // Initial calculation
+        calculateCommission();
     </script>
 </body>
 </html>

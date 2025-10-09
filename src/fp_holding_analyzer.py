@@ -28,10 +28,13 @@ class FPHoldingAnalyzer:
         """
         print(f"📊 Ładuję dane z: {self.excel_path}")
         
-        # Wczytaj TYLKO 14 wierszy danych (sie.24 - wrz.25)
+        # Wczytaj dane od września 2024 (pomijamy sierpień 2024)
         df = pd.read_excel(self.excel_path, nrows=14)
         
-        print(f"✅ Wczytano {len(df)} miesięcy danych")
+        # Usuń pierwszy wiersz (sierpień 2024) - skupiamy się na wrz.2024 - wrz.2025
+        df = df.iloc[1:].reset_index(drop=True)
+        
+        print(f"✅ Wczytano {len(df)} miesięcy danych (wrz.2024 - wrz.2025)")
         print(f"📋 Kolumny: {list(df.columns)}")
         
         # KLUCZOWE: Użyj gotowej kolumny ZYSK zamiast obliczać od nowa!
